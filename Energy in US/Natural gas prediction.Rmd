@@ -1,0 +1,101 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+## added the specific libraries
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(tseries)
+library(forecast)
+library(TTR)
+
+```
+
+```{r}
+
+### read the excel file 
+energy<-read_excel("C:\\Users\\poonam\\Desktop\\FIU\\2019 Fall\\Data Science\\Data sets for project\\Energy\\data from my research for project\\comenergy.xlsx")
+#energy
+
+### select one column natural gas and add into the data frame
+data.frame(energy$'natural gas')
+newenergyng<-select(energy,'natural gas')
+newenergyng
+
+### created a yearly time series
+new_ts_ng<-ts(newenergyng,start=c(1980),end=c(2016))
+### basic commands to see the time series data
+#str(new_ts_ng)
+#class(new_ts_ng)
+#start(new_ts_ng)
+#end(new_ts_ng)
+#time(new_ts_ng)
+
+### plot the time series data
+plot(new_ts_ng,main="Time series data",col="red",lwd=3)
+grid(4, 5, lty = "solid")
+
+### make the data stationary
+log(new_ts_ng)
+plot(log(new_ts_ng))
+
+diff(log(new_ts_ng))
+plot(diff(log(new_ts_ng)))
+
+```
+
+```{r}
+###  ARIMA Model
+### Auto correlation factor on non stationary data
+acf(new_ts_ng)
+### Auto correlation factor on stationary data
+###ACF is a plot of total correlation between different lag functions.
+acf(diff(log(new_ts_ng)))
+### Partial auto correlation factor on stationary data
+pacf(diff(log(new_ts_ng)))
+
+mymodel<-auto.arima(new_ts_ng)
+#mymodel
+auto.arima(new_ts_ng,ic="aic",trace=TRUE)
+
+plot.ts(mymodel$residuals)
+acf(ts(mymodel$residuals),main='ACF Residual')
+pacf(ts(mymodel$residuals),main='ACF Residual')
+```
+
+```{r}
+### forcast the model for 10 years
+myforecast<-forecast(mymodel,level=c(95),h=10)
+plot(myforecast,xlab="Time",main="ARIMA model to forecast CO2 emission from natural gas for 10 years",ylab="CO2 emission from natural gas",col="red",lwd=3)
+grid(4, 5, lty = "solid")
+
+```
+
+```{r}
+### line plot of real values and predicted values
+predictvalues=fitted(myforecast)
+#predictvalues
+originalvalues=new_ts_ng
+#originalvalues
+plot(predictvalues,col="red",main="Real vs Predicted values",ylab="CO2 emission from natural gas",lwd=3)
+lines(originalvalues,col="green",lwd=3)
+grid(4, 5, lty = "solid")
+
+```
+
+
+```{r}
+library(lmtest)
+accuracy(mymodel)
+checkresiduals(mymodel)
+summary(mymodel)
+#coeftest(mymodel)
+confint(mymodel)
+```
+
+
+

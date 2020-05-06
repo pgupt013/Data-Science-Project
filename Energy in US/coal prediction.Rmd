@@ -1,0 +1,126 @@
+
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+## added the specific libraries
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(tseries)
+library(forecast)
+library(TTR)
+library(lmtest)
+
+```
+
+```{r}
+
+### read the excel file 
+energy<-read_excel("C:\\Users\\poonam\\Desktop\\FIU\\2019 Fall\\Data Science\\Data sets for project\\Energy\\data from my research for project\\comenergy.xlsx")
+#energy
+
+### select one column coal and add into the data frame
+data.frame(energy$coal)
+newenergycoal<-select(energy,coal)
+
+### created a yearly time series
+new_ts_coal<-ts(newenergycoal,start=c(1980),end=c(2016))
+### basic commands to see the time series data
+#str(new_ts_coal)
+#class(new_ts_coal)
+#start(new_ts_coal)
+#end(new_ts_coal)
+#time(new_ts_coal)
+### plot the time series data
+plot(new_ts_coal,main="Time series data",col="red",lwd=3)
+grid(4, 5, lty = "solid")
+#boxplot(new_ts_coal~cycle(new_ts_coal))
+
+### make the data stationary
+log(new_ts_coal)
+plot(log(new_ts_coal))
+
+diff(log(new_ts_coal))
+plot(diff(log(new_ts_coal)))
+
+```
+
+```{r}
+###  ARIMA Model
+### Auto correlation factor on non stationary data
+acf(new_ts_coal)
+### Auto correlation factor on stationary data
+###ACF is a plot of total correlation between different lag functions.
+acf(diff(log(new_ts_coal)))
+### Partial auto correlation factor on stationary data
+pacf(diff(log(new_ts_coal)))
+
+mymodel<-auto.arima(new_ts_coal)
+#mymodel
+auto.arima(new_ts_coal,ic="aic",trace=TRUE)
+
+plot.ts(mymodel$residuals)
+acf(ts(mymodel$residuals),main='ACF Residual')
+pacf(ts(mymodel$residuals),main='ACF Residual')
+```
+
+```{r}
+### forcast the model for 10 years
+myforecast<-forecast(mymodel,level=c(95),h=10)
+plot(myforecast,xlab="Time",main="ARIMA model to forcast CO2 emission from coal for 10 years",ylab="CO2 emission from Coal",col="red",lwd=3)
+grid(4, 5, lty = "solid")
+
+```
+
+```{r}
+### line plot of real values and predicted values
+predictvalues=fitted(myforecast)
+#predictvalues
+originalvalues=new_ts_coal
+#originalvalues
+plot(predictvalues,col="red",main="Real vs Predicted values",ylab="CO2 emission from coal",lwd=3)
+lines(originalvalues,col="green",lwd=3)
+grid(4, 5, lty = "solid")
+
+```
+```{r}
+accuracy(mymodel)
+
+```
+
+```{r}
+checkresiduals(mymodel)
+
+```
+
+```{r}
+checkresiduals(new_ts_coal)
+
+```
+```{r}
+summary(mymodel)
+
+coeftest(mymodel)
+confint(mymodel)
+
+```
+
+```
+```{r}
+AIC(mymodel)
+
+
+
+```
+```
+```{r}
+rss <- sum((predictvalues - originalvalues) ^ 2)  ## residual sum of squares
+tss <- sum((originalvalues - mean(originalvalues)) ^ 2)  ## total sum of squares
+rsq <- 1 - rss/tss
+print(rsq)
+
+```
